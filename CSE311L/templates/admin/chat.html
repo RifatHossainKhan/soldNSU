@@ -1,0 +1,27 @@
+{% extends "admin/layout.html" %}
+{% block title %}Admin · Universal chat{% endblock %}
+{% block admin %}
+<h2>Universal chatbox moderation</h2>
+<table class="table">
+  <tr><th>User</th><th>Message</th><th>Status</th><th></th></tr>
+  {% for m in msgs %}
+  <tr>
+    <td>{{ m.name }}<br><small>{{ m.created_at }}</small></td>
+    <td>{{ m.body }}</td>
+    <td><span class="tag {{ 'ok' if m.approved else 'warn' }}">{{ 'approved' if m.approved else 'pending' }}</span></td>
+    <td class="actions">
+      {% if not m.approved %}
+      <form method="post" action="{{ url_for('admin_chat_approve', msg_id=m.id) }}" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small">Approve</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin_chat_delete', msg_id=m.id) }}" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small danger">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4" class="empty">No chat messages yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

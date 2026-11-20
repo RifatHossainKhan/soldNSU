@@ -1,0 +1,47 @@
+{% extends "admin/layout.html" %}
+{% block title %}Admin · Play cards{% endblock %}
+{% block admin %}
+<form class="panel" method="post" enctype="multipart/form-data">
+  <h2>Add a play card</h2>
+  <p class="muted">Small cards shown in a bar on the home page. Clicking a card opens its link. The picture is optional (a square image works best).</p>
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <div class="row">
+    <label>Title (max 40 characters) <input name="title" maxlength="40" required placeholder="e.g. NSU Library"></label>
+    <label>Link <input name="url" required placeholder="https://example.com or /sell"></label>
+    <label>Picture (optional) <input type="file" name="image" accept="image/*"></label>
+  </div>
+  <button class="btn">Add card</button>
+</form>
+
+<table class="table">
+  <tr><th>Order</th><th>Card</th><th>Link</th><th>Status</th><th>Actions</th></tr>
+  {% for c in cards %}
+  <tr>
+    <td>{{ c.position }}</td>
+    <td>
+      <span class="thumb-row">
+        {% if c.image %}<img class="mini" src="{{ url_for('static', filename='uploads/' ~ c.image) }}" alt="">
+        {% else %}<span class="mini none">–</span>{% endif %}
+        <b>{{ c.title }}</b>
+      </span>
+    </td>
+    <td><a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">{{ c.url[:50] }}{{ '…' if c.url|length > 50 }}</a></td>
+    <td><span class="tag {{ 'ok' if c.active else 'warn' }}">{{ 'shown' if c.active else 'hidden' }}</span></td>
+    <td class="actions">
+      <a class="btn small ghost" href="{{ url_for('admin_edit_card', card_id=c.id) }}">Edit</a>
+      <form method="post" action="{{ url_for('admin_toggle_card', card_id=c.id) }}" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button class="btn small ghost">{{ 'Hide' if c.active else 'Show' }}</button>
+      </form>
+      <form method="post" action="{{ url_for('admin_delete_card', card_id=c.id) }}" class="inline"
+            onsubmit="return confirm('Delete this card?')">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button class="btn small danger">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="empty">No play cards yet. Add your first one above.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

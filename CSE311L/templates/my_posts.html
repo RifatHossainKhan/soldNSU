@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}My Posts{% endblock %}
+{% block content %}
+<h2>My posts</h2>
+{% if posts %}
+<table class="table">
+  <tr><th>Title</th><th>Price</th><th>Segment</th><th>Status</th><th></th></tr>
+  {% for p in posts %}
+  <tr>
+    <td><a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a></td>
+    <td>৳{{ '%.0f'|format(p.price) }}</td>
+    <td>{{ SEGMENTS[p.segment] }}</td>
+    <td>
+      <span class="tag {{ 'ok' if p.status == 'approved' else 'warn' }}">{{ p.status }}</span>
+      {% if p.sold %}<span class="tag sold">sold</span>{% endif %}
+    </td>
+    <td class="actions">
+      {% if p.status == 'approved' %}<a class="btn small ghost" href="{{ url_for('chat', post_id=p.id) }}">Buyer chats</a>{% endif %}
+      <form method="post" action="{{ url_for('toggle_sold', post_id=p.id) }}" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <button class="btn small ghost">{{ 'Mark available' if p.sold else 'Mark sold' }}</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+  <p class="empty">You are still null. Do something.. <a href="{{ url_for('sell') }}">Create your first sell post.</a></p>
+{% endif %}
+{% endblock %}

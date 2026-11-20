@@ -1,0 +1,99 @@
+{% macro ico(n) -%}
+{%- set p = {
+ 'grid':'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+ 'cap':'<path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/>',
+ 'globe':'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+ 'box':'<path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+ 'plus':'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+ 'chat':'<path d="M21 12a8 8 0 01-11.6 7.1L3 21l1.9-5.4A8 8 0 1121 12z"/>',
+ 'users':'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14.8c2.2.6 4 2.2 4 5.2"/>',
+ 'shield':'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/>',
+ 'logout':'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>',
+ 'search':'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'
+} -%}
+<svg class="i" viewBox="0 0 24 24">{{ p[n]|safe }}</svg>
+{%- endmacro %}
+{% set ep = request.endpoint or '' %}
+{% set seg = request.args.get('segment', '') %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ self.title() }} · SoldNSU</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <a class="logo" href="{{ url_for('home') }}">
+      <div class="logo-mark">S</div>
+      <div><b>Sold<span>NSU</span></b><small>Build for future</small></div>
+    </a>
+    <nav class="nav">
+      <div class="nav-label">Marketplace</div>
+      <a class="{{ 'on' if ep == 'home' and not seg }}" href="{{ url_for('home') }}">{{ ico('grid') }}<span>Products</span></a>
+      <a class="{{ 'on' if ep == 'home' and seg == 'university' }}" href="{{ url_for('home', segment='university') }}">{{ ico('cap') }}<span>University Goods</span></a>
+      <a class="{{ 'on' if ep == 'home' and seg == 'universal' }}" href="{{ url_for('home', segment='universal') }}">{{ ico('globe') }}<span>Universal Products</span></a>
+
+      <div class="nav-label">Account</div>
+      {% if g.user %}
+        <a class="{{ 'on' if ep == 'my_posts' }}" href="{{ url_for('my_posts') }}">{{ ico('box') }}<span>My Products</span></a>
+        <a class="{{ 'on' if ep == 'sell' }}" href="{{ url_for('sell') }}">{{ ico('plus') }}<span>Sell</span></a>
+        <a class="{{ 'on' if ep in ('inbox', 'chat') }}" href="{{ url_for('inbox') }}">{{ ico('chat') }}<span>Messages</span></a>
+        <a class="{{ 'on' if ep == 'universal_chat' }}" href="{{ url_for('universal_chat') }}">{{ ico('users') }}<span>Universal Chat</span></a>
+        {% if g.user.is_admin %}
+          <div class="nav-label">Administration</div>
+          <a class="{{ 'on' if ep.startswith('admin') }}" href="{{ url_for('admin_dashboard') }}">{{ ico('shield') }}<span>Admin Panel</span></a>
+        {% endif %}
+      {% else %}
+        <a href="{{ url_for('login', next=url_for('my_posts')) }}">{{ ico('box') }}<span>My Products</span></a>
+        <a href="{{ url_for('login', next=url_for('sell')) }}">{{ ico('plus') }}<span>Sell</span></a>
+      {% endif %}
+    </nav>
+    {% if g.user %}
+    <div class="side-foot">
+      <div class="usercard">
+        <div class="avatar">{{ g.user.name[:1]|upper }}</div>
+        <div><b>{{ g.user.name }}</b><small>{{ 'Administrator' if g.user.is_admin else 'Member' }}</small></div>
+      </div>
+    </div>
+    {% endif %}
+  </aside>
+
+  <div class="content">
+    <header class="topbar"><div class="bar">
+      <div class="top-title"><b>{{ self.title() }}</b><small>SoldNSU · Build For Future</small></div>
+      <div class="top-actions">
+        {% if g.user %}
+          <a class="btn small" href="{{ url_for('sell') }}">{{ ico('plus') }} Sell</a>
+          <form method="post" action="{{ url_for('logout') }}" class="inline">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <button class="btn small ghost">{{ ico('logout') }} Logout</button>
+          </form>
+        {% else %}
+          <a class="btn small ghost" href="{{ url_for('login') }}">Login</a>
+          <a class="btn small" href="{{ url_for('register') }}">Sign up</a>
+        {% endif %}
+      </div>
+    </div></header>
+
+    <main class="page">
+      {% with msgs = get_flashed_messages(with_categories=true) %}
+        {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="foot">
+      <div><b>SoldNSU</b> &nbsp;·&nbsp; <span>Build For Future</span></div>
+      <nav>
+        <a href="{{ url_for('home') }}">Products</a>
+        <a href="{{ url_for('sell') }}">Sell</a>
+      </nav>
+      <span>© 2026 SoldNSU · One account to buy and sell</span>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+{% block content %}
+{% macro intro() %}
+  <h3>Your campus, your marketplace, your community.</h3>
+  <p>At soldNSU, you can buy what you need, sell what you no longer use, and connect with fellow NSU students. </p>
+{% endmacro %}
+
+<section class="hero">
+  <h1>HI ! NSUers</h1>
+
+  {% if cards %}
+  {# repeat the cards so the strip is always full, then show the list twice for a seamless loop #}
+  {% set reps = (8 // cards|length) + 1 %}
+  <div class="marquee" aria-label="Play cards">
+    <div class="track" style="--dur: {{ cards|length * reps * 8 }}s">
+      {% for copy in range(2) %}
+      <div class="group"{% if copy == 1 %} aria-hidden="true"{% endif %}>
+        {% for r in range(reps) %}{% for c in cards %}
+        <a class="hcard" href="{{ c.url }}"{% if c.url.startswith('http') %} target="_blank" rel="noopener noreferrer"{% endif %}{% if copy == 1 %} tabindex="-1"{% endif %}>
+          {% if c.image %}<img src="{{ url_for('static', filename='uploads/' ~ c.image) }}" alt="">
+          {% else %}<span class="ph">{{ c.title[:1]|upper }}</span>{% endif %}
+          <span class="t">{{ c.title }}</span><span class="arrow">↗</span>
+        </a>
+        {% endfor %}{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not cards %}{{ intro() }}{% endif %}
+  <form class="search" method="get">
+    <input type="hidden" name="segment" value="{{ segment }}">
+    <input type="hidden" name="category" value="{{ category }}">
+    <span class="si">{{ ico('search') }}</span>
+    <input type="search" name="q" value="{{ q }}" placeholder="What are you looking for?">
+    <button class="btn">Search</button>
+  </form>
+  {% if cards %}<div class="hero-intro">{{ intro() }}</div>{% endif %}
+</section>
+
+<form class="chips" method="get">
+  <input type="hidden" name="q" value="{{ q }}">
+  <input type="hidden" name="segment" value="{{ segment }}">
+  <a class="chip {{ 'on' if not segment }}" href="{{ url_for('home') }}">All</a>
+  {% for key, label in SEGMENTS.items() %}
+    <a class="chip {{ 'on' if segment == key }}" href="{{ url_for('home', segment=key) }}">{{ label }}</a>
+  {% endfor %}
+  <select class="chip" name="category" onchange="this.form.submit()">
+    <option value="">All Categories</option>
+    {% for c in categories %}<option {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}
+  </select>
+</form>
+
+<div class="section-head">
+  <h2>{{ SEGMENTS[segment] if segment else 'Latest products' }}</h2>
+  <span>{{ posts|length }} item{{ '' if posts|length == 1 else 's' }}</span>
+</div>
+
+{% if posts %}
+<div class="grid">
+  {% for p in posts %}
+  <a class="card" href="{{ url_for('post_detail', post_id=p.id) }}">
+    <div class="thumb">
+      {% if p.photo %}<img src="{{ url_for('static', filename='uploads/' ~ p.photo) }}" alt="">
+      {% else %}<div class="noimg">No photo</div>{% endif %}
+      <span class="tag white">{{ p.category }}</span>
+    </div>
+    <div class="card-body">
+      <h3>{{ p.title }}</h3>
+      <div class="price">৳{{ '%.0f'|format(p.price) }}</div>
+      <div class="meta">
+        <span class="avatar">{{ p.owner_name[:1]|upper }}</span>{{ p.owner_name }}
+        {% if p.sold %}<span class="tag sold" style="margin-left:auto">Sold</span>{% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+  <div class="empty"><b>No products found yet.</b><br>Be the first to <a href="{{ url_for('sell') }}">sell something</a>.</div>
+{% endif %}
+{% endblock %}

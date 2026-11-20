@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }}{% endblock %}
+{% block content %}
+<div class="detail">
+  <div class="detail-img">
+    {% if post.photo %}<img src="{{ url_for('static', filename='uploads/' ~ post.photo) }}" alt="">
+    {% else %}<div class="noimg big">No photo</div>{% endif %}
+  </div>
+  <div class="detail-info">
+    <span class="tag">{{ post.category }}</span>
+    <span class="tag alt">{{ SEGMENTS[post.segment] }}</span>
+    {% if post.sold %}<span class="tag sold">Sold</span>{% endif %}
+    {% if post.status != 'approved' %}<span class="tag warn">Pending approval</span>{% endif %}
+    <h1>{{ post.title }}</h1>
+    <div class="price big">৳{{ '%.0f'|format(post.price) }}</div>
+    <p class="desc">{{ post.description or 'No description.' }}</p>
+    <p class="muted">Seller: <strong>{{ post.owner_name }}</strong></p>
+
+    {% if post.status == 'approved' %}
+      {% if not g.user %}
+        <a class="btn" href="{{ url_for('login', next=request.path) }}">Log in to buy / chat with owner</a>
+      {% elif g.user.id == post.owner_id %}
+        <a class="btn" href="{{ url_for('chat', post_id=post.id) }}">See buyer chats</a>
+      {% elif post.sold %}
+        <p class="muted">This item has been sold.</p>
+      {% else %}
+        <a class="btn" href="{{ url_for('chat', post_id=post.id) }}">Buy · Chat with the owner</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

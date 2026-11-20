@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Chats{% endblock %}
+{% block content %}
+<div class="row" style="align-items:start">
+  <div class="panel">
+    <h2>Chats as buyer</h2>
+    <p class="muted">Owners you have contacted.</p>
+    {% for c in as_buyer %}
+      <p><a href="{{ url_for('chat', post_id=c.id) }}"><b>{{ c.title }}</b></a> <span class="muted">· owner {{ c.owner_name }}</span></p>
+    {% else %}<p class="muted">You have not contacted any owner yet.</p>{% endfor %}
+  </div>
+
+  <div class="panel">
+    <h2>Chats about my products</h2>
+    <p class="muted">Buyers who messaged you.</p>
+    {% for c in as_owner %}
+      <p><a href="{{ url_for('chat', post_id=c.id) }}"><b>{{ c.title }}</b></a> <span class="muted">· {{ c.buyers }} buyer(s)</span></p>
+    {% else %}<p class="muted">No one has messaged you yet.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

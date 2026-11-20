@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Buyer chats{% endblock %}
+{% block content %}
+<div class="panel">
+  <h2>Buyers asking about “{{ post.title }}”</h2>
+  {% for b in buyers %}
+    <p><a class="btn small ghost" href="{{ url_for('chat', post_id=post.id, buyer_id=b.id) }}">Chat with {{ b.name }}</a></p>
+  {% else %}
+    <p class="empty">No buyers have messaged you about this product yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

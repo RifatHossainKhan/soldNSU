@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+{% set ep = request.endpoint or '' %}
+<div class="subtabs">
+  <a class="{{ 'on' if ep == 'admin_dashboard' }}" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+  <a class="{{ 'on' if ep in ('admin_posts', 'admin_edit_post') }}" href="{{ url_for('admin_posts') }}">Posts</a>
+  <a class="{{ 'on' if ep == 'admin_users' }}" href="{{ url_for('admin_users') }}">Manage users</a>
+  <a class="{{ 'on' if ep == 'admin_chat' }}" href="{{ url_for('admin_chat') }}">Universal chat</a>
+  <a class="{{ 'on' if ep in ('admin_cards', 'admin_edit_card') }}" href="{{ url_for('admin_cards') }}">Play cards</a>
+</div>
+{% block admin %}{% endblock %}
+{% endblock %}

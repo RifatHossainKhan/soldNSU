@@ -1,0 +1,14 @@
+{% extends "admin/layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block admin %}
+<h2>Dashboard</h2>
+<div class="stats">
+  <div class="stat"><b>{{ stats.users }}</b><span>Users</span></div>
+  <div class="stat"><b>{{ stats.posts }}</b><span>Total posts</span></div>
+  <div class="stat hl"><b>{{ stats.pending }}</b><span>Posts awaiting approval</span></div>
+  <div class="stat"><b>{{ stats.approved }}</b><span>Live posts</span></div>
+  <div class="stat"><b>{{ stats.university }}</b><span>University Educational</span></div>
+  <div class="stat"><b>{{ stats.universal }}</b><span>Universal</span></div>
+  <div class="stat hl"><b>{{ stats.chat_pending }}</b><span>Chat messages to review</span></div>
+</div>
+{% endblock %}

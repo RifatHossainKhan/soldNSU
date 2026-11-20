@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Universal Chat{% endblock %}
+{% block content %}
+<div class="panel">
+  <h2>Universal chatbox</h2>
+  <p class="muted">Open to every user of the app. Messages appear for everyone after admin approval.</p>
+  <div class="chatbox">
+    {% for m in msgs %}
+      <div class="msg {{ 'mine' if m.user_id == g.user.id }}">
+        <b>{{ m.name }}</b><span>{{ m.body }}</span>
+        <time>{{ m.created_at }}{% if not m.approved %} · awaiting approval{% endif %}</time>
+      </div>
+    {% else %}
+      <p class="empty">No messages yet. Start the conversation!</p>
+    {% endfor %}
+  </div>
+  <form method="post" class="sendrow">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input name="body" maxlength="500" placeholder="Message everyone…" required autocomplete="off">
+    <button class="btn">Send</button>
+  </form>
+</div>
+{% endblock %}

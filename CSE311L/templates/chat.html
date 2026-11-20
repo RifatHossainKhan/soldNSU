@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Chat{% endblock %}
+{% block content %}
+<div class="panel">
+  <h2>Chat · <a href="{{ url_for('post_detail', post_id=post.id) }}">{{ post.title }}</a></h2>
+  <p class="muted">
+    {% if is_owner %}Talking with buyer <strong>{{ buyer.name }}</strong>{% else %}Talking with owner <strong>{{ post.owner_name }}</strong>{% endif %}
+  </p>
+  <div class="chatbox">
+    {% for m in messages %}
+      <div class="msg {{ 'mine' if m.sender_id == g.user.id }}">
+        <b>{{ m.sender_name }}</b><span>{{ m.body }}</span><time>{{ m.created_at }}</time>
+      </div>
+    {% else %}
+      <p class="empty">No messages yet. Say something,we are waiting for you.</p>
+    {% endfor %}
+  </div>
+  <form method="post" class="sendrow">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input name="body" maxlength="1000" placeholder="Write a message…" required autocomplete="off">
+    <button class="btn">Send</button>
+  </form>
+</div>
+{% endblock %}

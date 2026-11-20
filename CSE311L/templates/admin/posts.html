@@ -1,0 +1,37 @@
+{% extends "admin/layout.html" %}
+{% block title %}Admin · Posts{% endblock %}
+{% block admin %}
+<h2>All posts</h2>
+<table class="table">
+  <tr><th>Post</th><th>Owner</th><th>Segment</th><th>Status</th><th>Actions</th></tr>
+  {% for p in posts %}
+  <tr>
+    <td><a href="{{ url_for('post_detail', post_id=p.id) }}">{{ p.title }}</a><br><small>৳{{ '%.0f'|format(p.price) }} · {{ p.category }}</small></td>
+    <td>{{ p.owner_name }}</td>
+    <td>
+      <form method="post" action="{{ url_for('admin_edit_segment', post_id=p.id) }}" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <select name="segment" onchange="this.form.submit()">
+          {% for key, label in SEGMENTS.items() %}<option value="{{ key }}" {{ 'selected' if p.segment == key }}>{{ label }}</option>{% endfor %}
+        </select>
+      </form>
+    </td>
+    <td><span class="tag {{ 'ok' if p.status == 'approved' else 'warn' }}">{{ p.status }}</span></td>
+    <td class="actions">
+      {% if p.status == 'pending' %}
+      <form method="post" action="{{ url_for('admin_approve_post', post_id=p.id) }}" class="inline">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small">Approve</button>
+      </form>
+      {% endif %}
+      <a class="btn small ghost" href="{{ url_for('admin_edit_post', post_id=p.id) }}">Edit</a>
+      <form method="post" action="{{ url_for('admin_delete_post', post_id=p.id) }}" class="inline"
+            onsubmit="return confirm('Delete this post permanently?')">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="btn small danger">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="empty">No posts yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "admin/layout.html" %}
+{% block title %}Edit play card{% endblock %}
+{% block admin %}
+<form class="panel" method="post" enctype="multipart/form-data" style="max-width:640px">
+  <h2>Edit play card</h2>
+  <p class="muted">Change the title, link or picture. Lower order numbers appear first (left).</p>
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <label>Title (max 40 characters) <input name="title" maxlength="40" value="{{ card.title }}" required></label>
+  <label>Link <input name="url" value="{{ card.url }}" required></label>
+
+  <label>Picture
+    {% if card.image %}
+      <span class="thumb-row" style="margin:8px 0">
+        <img class="mini big" src="{{ url_for('static', filename='uploads/' ~ card.image) }}" alt="">
+        <span class="muted">Current picture. Choose a file below to replace it.</span>
+      </span>
+    {% endif %}
+    <input type="file" name="image" accept="image/*">
+  </label>
+  {% if card.image %}
+  <label style="display:flex;align-items:center;gap:10px">
+    <input type="checkbox" name="remove_image" value="1" style="width:auto;margin:0"> Remove the picture
+  </label>
+  {% endif %}
+
+  <div class="row">
+    <label>Order <input type="number" name="position" value="{{ card.position }}"></label>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:28px">
+      <input type="checkbox" name="active" value="1" {{ 'checked' if card.active }} style="width:auto;margin:0"> Show on home page
+    </label>
+  </div>
+  <button class="btn">Save changes</button>
+  <a class="btn ghost" href="{{ url_for('admin_cards') }}">Cancel</a>
+</form>
+{% endblock %}
