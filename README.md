@@ -9,6 +9,6 @@ The project is in [`CSE311L/`](CSE311L). See [`CSE311L/README.md`](CSE311L/READM
 | Name | Student ID |
 |---|---|
 | MD Rifat Hossain Khan | 2233150642 |
-| H M Imrul Kayes Emon | |
-| Rebecca Sultana Asha | |
+| H M Imrul Kayes Emon | 2232979642 |
+| Rebecca Sultana Asha | 2312640642 |
 | Marsia Tabassum Zidni | 2513804042 |
