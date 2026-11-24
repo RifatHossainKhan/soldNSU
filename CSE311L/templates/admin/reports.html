@@ -1,0 +1,53 @@
+{% extends "admin/layout.html" %}
+{% block title %}Admin · Reports{% endblock %}
+{% block admin %}
+<div class="reports">
+<h2>Reports</h2>
+<p class="muted">Built from the database views <code>v_segment_summary</code>, <code>v_category_summary</code>
+and <code>v_seller_stats</code>, and the trigger-filled table <code>post_status_log</code>.</p>
+
+<h3>By segment</h3>
+<table class="table">
+  <tr><th>Segment</th><th>Total</th><th>Pending</th><th>Approved</th><th>Rejected</th></tr>
+  {% for s in segments %}
+  <tr><td>{{ s.label }}</td><td>{{ s.total_posts }}</td><td>{{ s.pending_posts }}</td>
+      <td>{{ s.approved_posts }}</td><td>{{ s.rejected_posts }}</td></tr>
+  {% endfor %}
+</table>
+
+<h3>By category</h3>
+<table class="table">
+  <tr><th>Category</th><th>Posts</th><th>Live</th><th>Sold</th><th>Avg price</th><th>Min</th><th>Max</th></tr>
+  {% for c in categories %}
+  <tr><td>{{ c.category }}</td><td>{{ c.total_posts }}</td><td>{{ c.approved_posts }}</td><td>{{ c.sold_posts }}</td>
+      <td>{{ '৳%.0f'|format(c.avg_price) if c.avg_price is not none else '—' }}</td>
+      <td>{{ '৳%.0f'|format(c.min_price) if c.min_price is not none else '—' }}</td>
+      <td>{{ '৳%.0f'|format(c.max_price) if c.max_price is not none else '—' }}</td></tr>
+  {% endfor %}
+</table>
+
+<h3>Sellers</h3>
+<table class="table">
+  <tr><th>Member</th><th>Posts</th><th>Live</th><th>Sold</th><th>Sold value</th><th>Buyer chats</th></tr>
+  {% for u in sellers %}
+  <tr><td>{{ u.name }}<br><small>{{ u.email }}</small></td><td>{{ u.total_posts }}</td><td>{{ u.approved_posts }}</td>
+      <td>{{ u.sold_posts }}</td><td>৳{{ '%.0f'|format(u.sold_value) }}</td><td>{{ u.buyer_threads }}</td></tr>
+  {% else %}
+  <tr><td colspan="6" class="empty">No members yet.</td></tr>
+  {% endfor %}
+</table>
+
+<h3>Recent status changes</h3>
+<table class="table">
+  <tr><th>When</th><th>Post</th><th>Status</th><th>Sold</th></tr>
+  {% for l in log %}
+  <tr><td><small>{{ l.changed_at }}</small></td>
+      <td><a href="{{ url_for('post_detail', post_id=l.post_id) }}">{{ l.title }}</a></td>
+      <td>{{ l.old_status or 'new' }} → <b>{{ l.new_status }}</b></td>
+      <td>{% if l.old_sold is none %}{{ 'yes' if l.new_sold else 'no' }}{% elif l.old_sold != l.new_sold %}{{ 'yes' if l.new_sold else 'no' }}{% else %}—{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="4" class="empty">No changes logged yet (the audit trigger is not installed on TiDB Cloud).</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

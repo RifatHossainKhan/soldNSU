@@ -109,8 +109,13 @@ class DB:
 
 
 def open_db(with_database=True):
+    connect_options = {}
+    # Enable TLS for hosted MySQL providers such as TiDB Cloud.
+    if os.environ.get("MYSQL_SSL", "false").lower() in ("1", "true", "yes"):
+        connect_options["ssl"] = {"ca": "/etc/ssl/certs/ca-certificates.crt"}
     conn = pymysql.connect(
         **MYSQL,
+        **connect_options,
         database=MYSQL_DB if with_database else None,
         charset="utf8mb4",
         cursorclass=RowCursor,
@@ -133,58 +138,46 @@ def close_db(_exc):
         db.close()
 
 
-TABLES = [
-    """CREATE TABLE IF NOT EXISTS users(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(190) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    is_admin TINYINT(1) NOT NULL DEFAULT 0,
-    is_banned TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-    """CREATE TABLE IF NOT EXISTS posts(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    owner_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    price DOUBLE NOT NULL,
-    category VARCHAR(60) NOT NULL,
-    segment VARCHAR(20) NOT NULL,
-    photo VARCHAR(255) NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'pending',
-    sold TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (owner_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-    """CREATE TABLE IF NOT EXISTS messages(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    post_id INT NOT NULL,
-    buyer_id INT NOT NULL,
-    sender_id INT NOT NULL,
-    body TEXT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-    FOREIGN KEY (buyer_id) REFERENCES users(id),
-    FOREIGN KEY (sender_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-    """CREATE TABLE IF NOT EXISTS universal_chat(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    body TEXT NOT NULL,
-    approved TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-    """CREATE TABLE IF NOT EXISTS cards(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(40) NOT NULL,
-    url VARCHAR(500) NOT NULL,
-    image VARCHAR(255) NULL,
-    `position` INT NOT NULL DEFAULT 0,
-    active TINYINT(1) NOT NULL DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
-]
+DB_DIR = os.path.join(BASE_DIR, "database")
+
+
+def _strip_comments(sql):
+    return "\n".join(l for l in sql.splitlines() if not l.lstrip().startswith("--"))
+
+
+def schema_statements():
+    """Statements of database/schema.sql, minus CREATE DATABASE / USE
+    (the app connects to MYSQL_DB itself)."""
+    with open(os.path.join(DB_DIR, "schema.sql"), encoding="utf-8") as f:
+        sql = _strip_comments(f.read())
+    out = []
+    for stmt in sql.split(";"):
+        stmt = stmt.strip()
+        if stmt and not re.match(r"(?i)^(CREATE\s+DATABASE|USE)\b", stmt):
+            out.append(stmt)
+    return out
+
+
+def routine_statements():
+    """Triggers and procedures from database/procedures_triggers.sql.
+    The file uses DELIMITER $$ for the mysql client; split it the same way."""
+    with open(os.path.join(DB_DIR, "procedures_triggers.sql"), encoding="utf-8") as f:
+        text = f.read()
+    out, delim, buf = [], ";", []
+    for line in text.splitlines():
+        m = re.match(r"(?i)^\s*DELIMITER\s+(\S+)", line)
+        if m:
+            delim = m.group(1)
+            continue
+        if line.lstrip().startswith("--"):
+            continue
+        buf.append(line)
+        if line.rstrip().endswith(delim):
+            stmt = "\n".join(buf).rstrip()[: -len(delim)].strip()
+            buf = []
+            if stmt and not re.match(r"(?i)^USE\b", stmt):
+                out.append(stmt)
+    return out
 
 
 def init_db():
@@ -204,10 +197,19 @@ def _init_db():
     db = open_db(with_database=False)
     db.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DB}` CHARACTER SET utf8mb4")
     db.close()
-    # 2) create the tables (does nothing if they already exist)
+    # 2) tables, lookup rows and views (every statement is idempotent)
     db = open_db()
-    for ddl in TABLES:
-        db.execute(ddl)
+    for stmt in schema_statements():
+        db.conn.cursor().execute(stmt)
+    db.commit()
+    # 3) triggers + stored procedures: optional (TiDB Cloud has neither)
+    try:
+        for stmt in routine_statements():
+            db.conn.cursor().execute(stmt)
+        db.commit()
+    except pymysql.MySQLError as e:
+        print(f"[SoldNSU] Skipping triggers/procedures ({e.args[-1]}). The app works without them.")
+    # 4) make sure an admin account exists
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@soldnsu.local")
     admin_pass = os.environ.get("ADMIN_PASSWORD", "admin123")
     if not db.execute("SELECT 1 FROM users WHERE is_admin=1").fetchone():
@@ -215,7 +217,8 @@ def _init_db():
             "INSERT INTO users(name,email,password_hash,is_admin) VALUES(?,?,?,1)",
             ("Admin", admin_email, generate_password_hash(admin_pass)))
         db.commit()
-        print(f"[SoldNSU] Admin created: {admin_email} / {admin_pass}  (change it!)")
+        print(f"[SoldNSU] Admin created: {admin_email}"
+              + ("  (default password admin123, change it!)" if admin_pass == "admin123" else ""))
     db.close()
 
 
@@ -501,6 +504,9 @@ def chat(post_id, buyer_id=None):
     buyer = db.execute("SELECT * FROM users WHERE id=?", (buyer_id,)).fetchone()
     if not buyer:
         abort(404)
+    if is_owner and not db.execute("SELECT 1 FROM messages WHERE post_id=? AND buyer_id=? LIMIT 1",
+                                   (post_id, buyer_id)).fetchone():
+        abort(404)  # sellers answer buyers; they cannot open a thread with a random user
     if request.method == "POST":
         body = request.form["body"].strip()
         if body:
@@ -550,15 +556,18 @@ def universal_chat():
 @admin_required
 def admin_dashboard():
     db = get_db()
-    stats = {
-        "users": db.execute("SELECT COUNT(*) FROM users WHERE is_admin=0").fetchone()[0],
-        "posts": db.execute("SELECT COUNT(*) FROM posts").fetchone()[0],
-        "pending": db.execute("SELECT COUNT(*) FROM posts WHERE status='pending'").fetchone()[0],
-        "approved": db.execute("SELECT COUNT(*) FROM posts WHERE status='approved'").fetchone()[0],
-        "university": db.execute("SELECT COUNT(*) FROM posts WHERE segment='university'").fetchone()[0],
-        "universal": db.execute("SELECT COUNT(*) FROM posts WHERE segment='universal'").fetchone()[0],
-        "chat_pending": db.execute("SELECT COUNT(*) FROM universal_chat WHERE approved=0").fetchone()[0],
-    }
+    # one round trip instead of seven separate COUNT(*) queries
+    stats = db.execute(
+        "SELECT (SELECT COUNT(*) FROM users WHERE is_admin=0) AS users, "
+        "COUNT(p.id) AS posts, "
+        "COALESCE(SUM(p.status='pending'),0) AS pending, "
+        "COALESCE(SUM(p.status='approved'),0) AS approved, "
+        "COALESCE(SUM(p.status='rejected'),0) AS rejected, "
+        "COALESCE(SUM(p.sold=1),0) AS sold, "
+        "COALESCE(SUM(p.segment='university'),0) AS university, "
+        "COALESCE(SUM(p.segment='universal'),0) AS universal, "
+        "(SELECT COUNT(*) FROM universal_chat WHERE approved=0) AS chat_pending "
+        "FROM posts p").fetchone()
     return render_template("admin/dashboard.html", stats=stats)
 
 
@@ -578,6 +587,16 @@ def admin_approve_post(post_id):
     db.execute("UPDATE posts SET status='approved' WHERE id=?", (post_id,))
     db.commit()
     flash("Post approved.", "ok")
+    return redirect(url_for("admin_posts"))
+
+
+@app.route("/admin/posts/<int:post_id>/reject", methods=["POST"])
+@admin_required
+def admin_reject_post(post_id):
+    db = get_db()
+    db.execute("UPDATE posts SET status='rejected' WHERE id=?", (post_id,))
+    db.commit()
+    flash("Post rejected. The seller can still see it under My Products.", "ok")
     return redirect(url_for("admin_posts"))
 
 
@@ -601,8 +620,7 @@ def admin_delete_post(post_id):
     post = db.execute("SELECT photo FROM posts WHERE id=?", (post_id,)).fetchone()
     if post:
         delete_photo(post["photo"])
-        db.execute("DELETE FROM messages WHERE post_id=?", (post_id,))
-        db.execute("DELETE FROM posts WHERE id=?", (post_id,))
+        db.execute("DELETE FROM posts WHERE id=?", (post_id,))  # messages go via ON DELETE CASCADE
         db.commit()
         flash("Post deleted.", "ok")
     return redirect(url_for("admin_posts"))
@@ -677,6 +695,26 @@ def admin_chat_delete(msg_id):
     db.execute("DELETE FROM universal_chat WHERE id=?", (msg_id,))
     db.commit()
     return redirect(url_for("admin_chat"))
+
+
+# ---------------------------------------------------------------- admin: reports (SQL views)
+@app.route("/admin/reports")
+@admin_required
+def admin_reports():
+    db = get_db()
+    log = []
+    try:
+        log = db.execute(
+            "SELECT l.*, p.title FROM post_status_log l JOIN posts p ON p.id=l.post_id "
+            "ORDER BY l.id DESC LIMIT 15").fetchall()
+    except pymysql.MySQLError:
+        pass
+    return render_template(
+        "admin/reports.html",
+        segments=db.execute("SELECT * FROM v_segment_summary ORDER BY code").fetchall(),
+        categories=db.execute("SELECT * FROM v_category_summary ORDER BY total_posts DESC, category").fetchall(),
+        sellers=db.execute("SELECT * FROM v_seller_stats ORDER BY total_posts DESC, name").fetchall(),
+        log=log)
 
 
 # ---------------------------------------------------------------- admin: play cards

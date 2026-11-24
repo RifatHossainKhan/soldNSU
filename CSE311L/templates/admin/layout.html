@@ -7,6 +7,7 @@
   <a class="{{ 'on' if ep == 'admin_users' }}" href="{{ url_for('admin_users') }}">Manage users</a>
   <a class="{{ 'on' if ep == 'admin_chat' }}" href="{{ url_for('admin_chat') }}">Universal chat</a>
   <a class="{{ 'on' if ep in ('admin_cards', 'admin_edit_card') }}" href="{{ url_for('admin_cards') }}">Play cards</a>
+  <a class="{{ 'on' if ep == 'admin_reports' }}" href="{{ url_for('admin_reports') }}">Reports</a>
 </div>
 {% block admin %}{% endblock %}
 {% endblock %}

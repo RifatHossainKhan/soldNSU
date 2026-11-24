@@ -1,85 +1,27 @@
--- SoldNSU: MySQL structure + your data (converted from soldnsu.db)
--- Import this in phpMyAdmin (Import tab) into an EMPTY server, or run: mysql -u root -p < soldnsu_mysql.sql
+-- =====================================================================
+--  SoldNSU — sample data for demos and testing
+--  Run AFTER schema.sql:   mysql -u root -p soldnsu < database/seed.sql
+--  Safe to run twice (INSERT IGNORE).
+--
+--  Demo logins (change or delete these before going live):
+--    admin@soldnsu.local  / admin123   (administrator)
+--    seller@soldnsu.local / demo1234
+--    buyer@soldnsu.local  / demo1234
+--  Photos live in static/uploads/sample_*.
+-- =====================================================================
 SET NAMES utf8mb4;
-CREATE DATABASE IF NOT EXISTS `soldnsu` CHARACTER SET utf8mb4;
 USE `soldnsu`;
 
-CREATE TABLE IF NOT EXISTS users(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(190) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    is_admin TINYINT(1) NOT NULL DEFAULT 0,
-    is_banned TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT IGNORE INTO users (id, name, email, password_hash, is_admin, is_banned, created_at) VALUES
+(1, 'Admin',       'admin@soldnsu.local',  'scrypt:32768:8:1$ZjmcSah10nTD0de1$96c663e9a07149095fd00798bd16e8c59c34f2a48dbcf4e4d06e8c948d60e9d624a578fb371dfce03627a64582de81e912e8c57a5485c1d6e91dd4d08fe9044f', 1, 0, '2026-11-15 20:24:09'),
+(2, 'Demo Seller', 'seller@soldnsu.local', 'scrypt:32768:8:1$IH3M6bUOstykZvLD$c6f2458b2a9e6e63b94931b2a6b663e49ddc970d0101536bb59a3a1466e47d05f79178a4d804931f6e04353743d73f38ab57a38b64d2491a62c334e5e35d8fd4', 0, 0, '2026-11-15 21:00:18'),
+(3, 'Demo Buyer',  'buyer@soldnsu.local',  'scrypt:32768:8:1$IH3M6bUOstykZvLD$c6f2458b2a9e6e63b94931b2a6b663e49ddc970d0101536bb59a3a1466e47d05f79178a4d804931f6e04353743d73f38ab57a38b64d2491a62c334e5e35d8fd4', 0, 0, '2026-11-16 08:30:00');
 
-CREATE TABLE IF NOT EXISTS posts(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    owner_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    price DOUBLE NOT NULL,
-    category VARCHAR(60) NOT NULL,
-    segment VARCHAR(20) NOT NULL,
-    photo VARCHAR(255) NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'pending',
-    sold TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (owner_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT IGNORE INTO posts (id, owner_id, title, description, price, category, segment, photo, status, sold, created_at) VALUES
+(1, 1, 'Desktop computer (Core i7, 10th gen)', 'A new computer with a Core i7 10th gen processor.', 50000, 'Electronics', 'universal', 'sample_01_computer.png', 'approved', 0, '2026-11-15 20:57:30'),
+(2, 1, 'CSE311 lab textbook', 'CSE311 lab textbook in good condition.', 100, 'Books', 'university', 'sample_02_books.jpeg', 'approved', 0, '2026-11-15 20:58:29'),
+(3, 2, 'CSE311L lab report (soft copy)', 'A lab report soft copy for reference.', 20, 'Other', 'university', 'sample_03_lab-report.png', 'approved', 0, '2026-11-15 21:02:03');
 
-CREATE TABLE IF NOT EXISTS messages(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    post_id INT NOT NULL,
-    buyer_id INT NOT NULL,
-    sender_id INT NOT NULL,
-    body TEXT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-    FOREIGN KEY (buyer_id) REFERENCES users(id),
-    FOREIGN KEY (sender_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS universal_chat(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    body TEXT NOT NULL,
-    approved TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS cards(
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(40) NOT NULL,
-    url VARCHAR(500) NOT NULL,
-    image VARCHAR(255) NULL,
-    `position` INT NOT NULL DEFAULT 0,
-    active TINYINT(1) NOT NULL DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT IGNORE INTO `users` (`id`, `name`, `email`, `password_hash`, `is_admin`, `is_banned`, `created_at`) VALUES
-(1, 'Admin', 'admin@soldnsu.local', 'scrypt:32768:8:1$YDNEH6e5YfRi2h6Q$6359038ceba2610142b0b7cb60be2cbda36190db502188e716a59706ad422dd07bf4191fe56e3c265b9f163014c607ac0420ba10e806f5b454a379b3bb540bb5', 1, 0, '2026-11-15 20:24:09'),
-(2, 'rifat khan', 'aminal19811@gmail.com', 'scrypt:32768:8:1$k2DDR3sjrpD7pUcV$9565bedad3c50173dbaecdcf3e13305efc62bcee5263997cba7824d74db3c1dd833217fde33e22d56cf8253e4767084bf2950ed4052fb955221a33492055d760', 0, 0, '2026-11-15 21:00:18');
-
-INSERT IGNORE INTO `posts` (`id`, `owner_id`, `title`, `description`, `price`, `category`, `segment`, `photo`, `status`, `sold`, `created_at`) VALUES
-(1, 1, 'computer', 'a new compuer core i7 10 gen', 50000, 'Electronics', 'universal', 'bb255fd0edc54f1186d537884c2b90fe_Intro_IMG.png', 'approved', 0, '2026-11-15 20:57:30'),
-(2, 1, 'books', 'cse311 lab textbook', 100, 'Books', 'university', '68072b9d963d4b889fd915a470fef5bb_download.jpeg', 'approved', 0, '2026-11-15 20:58:29'),
-(3, 2, 'cse311 lab report', 'a lab report soft copy', 20, 'Other', 'university', 'c67d00f922554961b31f5e2ad69c8a10_images.png', 'approved', 0, '2026-11-15 21:02:03');
-
-INSERT IGNORE INTO `messages` (`id`, `post_id`, `buyer_id`, `sender_id`, `body`, `created_at`) VALUES
-(1, 3, 1, 1, 'how can i have it', '2026-11-15 21:03:54');
-
-INSERT IGNORE INTO `universal_chat` (`id`, `user_id`, `body`, `approved`, `created_at`) VALUES
-(1, 1, 'hello', 1, '2026-11-15 20:58:47'),
-(2, 1, 'i need a cse311L report 1', 1, '2026-11-15 20:59:05'),
-(3, 2, 'i have one cheak it http://127.0.0.1:5000/post/3', 1, '2026-11-15 21:03:12');
-
-INSERT IGNORE INTO `cards` (`id`, `title`, `url`, `image`, `position`, `active`) VALUES
-(1, 'NSU Library', 'https://library.com', 'e4d0f7de878240469c906ba098686747_preview.webp', 1, 1);
-
--- 20 new products
 INSERT IGNORE INTO `posts` (`id`, `owner_id`, `title`, `description`, `price`, `category`, `segment`, `photo`, `status`, `sold`, `created_at`) VALUES
 (4, 2, 'Database System Concepts (7th ed.)', 'Silberschatz, Korth, Sudarshan. Clean copy for CSE311, no highlighting, only a few pencil notes in chapters 3 and 4.', 650, 'Books', 'university', 'sample_04_database-system-concepts-7th-ed.png', 'approved', 0, '2026-11-16 09:00:00'),
 (5, 1, 'Casio fx-991EX Calculator', 'Original ClassWiz scientific calculator, allowed in NSU exams. Works perfectly, cover included.', 1800, 'Stationery', 'university', 'sample_05_casio-fx-991ex-calculator.png', 'approved', 0, '2026-11-16 10:07:00'),
@@ -101,3 +43,27 @@ INSERT IGNORE INTO `posts` (`id`, `owner_id`, `title`, `description`, `price`, `
 (21, 1, 'Waterproof Laptop Backpack', 'Fits up to 15.6 inch laptop, USB charging port, three compartments. Barely used.', 900, 'Clothing', 'universal', 'sample_21_waterproof-laptop-backpack.png', 'approved', 0, '2026-11-20 17:59:00'),
 (22, 2, 'LED Table Lamp', 'Rechargeable desk lamp with three brightness levels and a flexible neck.', 550, 'Electronics', 'universal', 'sample_22_led-table-lamp.png', 'approved', 0, '2026-11-20 09:06:00'),
 (23, 1, 'Hoodie, size L (black)', 'Heavy cotton hoodie, worn a few times. No stains, zip works smoothly.', 800, 'Clothing', 'universal', 'sample_23_hoodie-size-l-black.png', 'approved', 0, '2026-11-20 10:13:00');
+
+-- a few posts in other states, so the admin pages and reports have something to show
+INSERT IGNORE INTO posts (id, owner_id, title, description, price, category, segment, photo, status, sold, created_at) VALUES
+(24, 3, 'Used scientific calculator', 'Casio fx-82MS, buttons a little worn.', 400, 'Stationery', 'university', NULL, 'pending', 0, '2026-11-21 11:00:00'),
+(25, 3, 'Old phone charger', 'Generic 10W charger.', 150, 'Electronics', 'universal', NULL, 'rejected', 0, '2026-11-21 12:00:00');
+UPDATE posts SET sold = 1 WHERE id IN (8, 15) AND sold = 0;
+
+INSERT IGNORE INTO messages (id, post_id, buyer_id, sender_id, body, created_at) VALUES
+(1, 3,  3, 3, 'Hi, how can I get this report?',              '2026-11-15 21:03:54'),
+(2, 3,  3, 2, 'I can send it on WhatsApp after payment.',    '2026-11-15 21:10:00'),
+(3, 11, 3, 3, 'Is the Raspberry Pi still available?',         '2026-11-18 18:00:00'),
+(4, 11, 3, 1, 'Yes, you can pick it up at NSU tomorrow.',     '2026-11-18 18:05:00'),
+(5, 4,  1, 1, 'Would you take 550 for the DB book?',          '2026-11-19 09:15:00');
+
+INSERT IGNORE INTO universal_chat (id, user_id, body, approved, created_at) VALUES
+(1, 1, 'Welcome to SoldNSU!', 1, '2026-11-15 20:58:47'),
+(2, 3, 'Does anyone have a CSE311L report 1?', 1, '2026-11-15 20:59:05'),
+(3, 2, 'I have one, check /post/3', 1, '2026-11-15 21:03:12'),
+(4, 3, 'Anyone selling a lab coat?', 0, '2026-11-21 10:00:00');
+
+INSERT IGNORE INTO cards (id, title, url, image, `position`, active) VALUES
+(1, 'NSU Website', 'https://www.northsouth.edu', NULL, 1, 1),
+(2, 'University Goods', '/?segment=university', NULL, 2, 1),
+(3, 'Sell an item', '/sell', NULL, 3, 1);

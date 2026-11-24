@@ -10,7 +10,8 @@
     <span class="tag">{{ post.category }}</span>
     <span class="tag alt">{{ SEGMENTS[post.segment] }}</span>
     {% if post.sold %}<span class="tag sold">Sold</span>{% endif %}
-    {% if post.status != 'approved' %}<span class="tag warn">Pending approval</span>{% endif %}
+    {% if post.status == 'pending' %}<span class="tag warn">Pending approval</span>
+    {% elif post.status == 'rejected' %}<span class="tag sold">Rejected by admin</span>{% endif %}
     <h1>{{ post.title }}</h1>
     <div class="price big">৳{{ '%.0f'|format(post.price) }}</div>
     <p class="desc">{{ post.description or 'No description.' }}</p>

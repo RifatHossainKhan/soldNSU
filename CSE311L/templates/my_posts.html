@@ -11,7 +11,7 @@
     <td>৳{{ '%.0f'|format(p.price) }}</td>
     <td>{{ SEGMENTS[p.segment] }}</td>
     <td>
-      <span class="tag {{ 'ok' if p.status == 'approved' else 'warn' }}">{{ p.status }}</span>
+      <span class="tag {{ {'approved': 'ok', 'rejected': 'sold'}.get(p.status, 'warn') }}">{{ p.status }}</span>
       {% if p.sold %}<span class="tag sold">sold</span>{% endif %}
     </td>
     <td class="actions">

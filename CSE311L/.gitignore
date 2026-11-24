@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.secret_key
+*.db
+.DS_Store
+
+# photos uploaded while testing; only the sample photos used by seed.sql are kept
+static/uploads/*
+!static/uploads/sample_*
