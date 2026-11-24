@@ -85,7 +85,7 @@ Change these before putting the site online.
 | `MYSQL_DB` | soldnsu | database name |
 | `MYSQL_SSL` | false | `true` for hosted databases such as TiDB Cloud |
 | `SECRET_KEY` | random, saved in `.secret_key` | signs the login cookie |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | admin@soldnsu.local / admin123 | admin created when no admin exists |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` |  | admin created when no admin exists |
 | `FLASK_DEBUG` | 0 | `1` for debug mode (local only) |
 
 ## Deploy online (Render + TiDB Cloud)
