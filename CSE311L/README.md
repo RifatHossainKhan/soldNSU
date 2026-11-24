@@ -10,8 +10,8 @@ Built with **Flask (Python)** and **MySQL / MariaDB**.
 
 | Name | Student ID |
 |---|---|
-| H M Imrul Kayes Emon | |
-| Rebecca Sultana Asha | |
+| H M Imrul Kayes Emon | 2232979642 |
+| Rebecca Sultana Asha | 2312640642 |
 | Marsia Tabassum Zidni | 2513804042 |
 | MD Rifat Hossain Khan | 2233150642 |
 
